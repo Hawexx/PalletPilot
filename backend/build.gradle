@@ -1,0 +1,108 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.2.5'
+	id 'jacoco'
+}
+
+
+group = 'com.palletpilot'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+	flatDir {
+		dirs 'libs'
+	}
+}
+
+dependencies {
+	// PalletPilot License Binary (Hidden Source)
+	implementation name: 'license-core'
+    // ... rest of dependencies ...
+    // Import Spring Boot BOM (Native Gradle Support)
+    implementation platform('org.springframework.boot:spring-boot-dependencies:3.2.5')
+
+	// Spring Boot Starters
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	
+    // Database
+	runtimeOnly 'org.postgresql:postgresql'
+	implementation 'org.flywaydb:flyway-core'
+
+    // JSON & API Documentation
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+    // Utilities
+	compileOnly 'org.projectlombok:lombok:1.18.30'
+	annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    
+    // Testing
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testRuntimeOnly 'com.h2database:h2'
+
+    // Hardware Integration
+    implementation 'org.apache.plc4x:plc4j-api:0.10.0'
+    implementation 'org.apache.plc4x:plc4j-driver-ads:0.10.0'
+    implementation 'org.apache.plc4x:plc4j-driver-s7:0.10.0'
+    implementation 'org.apache.plc4x:plc4j-driver-modbus:0.10.0'
+
+    // Resilience4j (Circuit Breaker + Retry)
+    implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
+    implementation 'io.github.resilience4j:resilience4j-micrometer:2.2.0'
+
+    // Prometheus Metrics
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+
+    // Caching
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.1.8'
+
+    // Structured JSON Logging (production)
+    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+	// Forward license skip flag to test JVM so LicenseGuard dev mode is active
+	environment 'LICENSE_SKIP_CHECK', System.getenv('LICENSE_SKIP_CHECK') ?: 'true'
+	finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+	dependsOn test
+	reports {
+		xml.required = true
+		html.required = true
+	}
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, excludes: [
+				'**/config/**',
+				'**/dto/**',
+				'**/enums/**',
+				'**/model/**',
+				'**/Application.*'
+			])
+		}))
+	}
+}

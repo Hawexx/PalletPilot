@@ -1,0 +1,36 @@
+# ─── Stage 1: Build ─────────────────────────────────
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy dependency files
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source
+COPY . .
+
+# Build
+RUN npm run build
+
+# ─── Stage 2: Runtime ───────────────────────────────
+FROM node:20-alpine AS runtime
+WORKDIR /app
+
+RUN addgroup -g 1001 -S palletpilot && \
+    adduser -u 1001 -S palletpilot -G palletpilot
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/public ./public
+
+USER palletpilot
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://localhost:3000/ || exit 1
+
+EXPOSE 3000
+
+CMD ["npm", "start"]

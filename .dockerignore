@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+.git/
+.gradle/
+backend/build/
+*.md
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
